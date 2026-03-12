@@ -649,11 +649,11 @@
           </div>
           <div class="preview-item">
             <label>Tarikh Mula</label>
-            <input type="date" id="editTarikhMula" onchange="kiraSemula()">
+            <input type="text" id="editTarikhMula" placeholder="dd/mm/yyyy" maxlength="10" oninput="autoSlash(this)" onchange="kiraSemula()">
           </div>
           <div class="preview-item">
             <label>Tarikh Tamat</label>
-            <input type="date" id="editTarikhTamat" onchange="kiraSemula()">
+            <input type="text" id="editTarikhTamat" placeholder="dd/mm/yyyy" maxlength="10" oninput="autoSlash(this)" onchange="kiraSemula()">
           </div>
           <div class="preview-item">
             <label>Bilangan Jam</label>
@@ -782,17 +782,7 @@
 // ═══════════════════════════════════════════════
 // KONFIGURASI — GANTI URL APPS SCRIPT SELEPAS DEPLOY
 // ═══════════════════════════════════════════════
-// Bila host dalam Apps Script, URL adalah sama dengan page URL
-// Buang /exec di hujung kalau ada, kemudian tambah semula
-const GAS_URL = (() => {
-  const url = window.location.href;
-  // Kalau dalam Apps Script (url mengandungi /macros/s/)
-  if (url.includes('/macros/s/')) {
-    return url.split('?')[0].replace(/\/dev$/, '/exec');
-  }
-  // Fallback — ganti dengan URL Apps Script jika host di tempat lain
-  return 'https://script.google.com/macros/s/AKfycbz8rBcOo0Et0ZL9EDXp1fnlZIRVK44-9HhcShKXaj20ZXjzydJVq7cSlWbgEj_DcOnw/exec';
-})();
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbz8rBcOo0Et0ZL9EDXp1fnlZIRVK44-9HhcShKXaj20ZXjzydJVq7cSlWbgEj_DcOnw/exec';
 // Claude API key diuruskan oleh Vercel server — selamat, tidak terdedah
 
 // ═══════════════════════════════════════════════
@@ -1086,17 +1076,49 @@ async function extractWithAI(base64, mimeType) {
   hideLoading();
 }
 
+// ═══════════════════════════════════════════════
+// TARIKH HELPERS
+// ═══════════════════════════════════════════════
+
+// YYYY-MM-DD → dd/mm/yyyy (untuk paparan)
+function formatTarikh(str) {
+  if (!str) return '-';
+  // Kalau dah dalam format dd/mm/yyyy
+  if (str.includes('/')) return str;
+  const parts = str.split('-');
+  if (parts.length === 3) return parts[2] + '/' + parts[1] + '/' + parts[0];
+  return str;
+}
+
+// dd/mm/yyyy → YYYY-MM-DD (untuk simpan ke Sheets)
+function parseTarikh(str) {
+  if (!str) return '';
+  if (str.includes('-')) return str; // dah dalam format betul
+  const parts = str.split('/');
+  if (parts.length === 3) return parts[2] + '-' + parts[1].padStart(2,'0') + '-' + parts[0].padStart(2,'0');
+  return str;
+}
+
+// Auto-tambah slash semasa taip: 01 → 01/ → 01/03 → 01/03/
+function autoSlash(input) {
+  let v = input.value.replace(/\D/g, ''); // buang bukan digit
+  if (v.length > 2) v = v.slice(0,2) + '/' + v.slice(2);
+  if (v.length > 5) v = v.slice(0,5) + '/' + v.slice(5);
+  if (v.length > 10) v = v.slice(0,10);
+  input.value = v;
+}
+
 function populatePreview(d) {
   document.getElementById('previewNama').textContent = d.nama || '-';
   document.getElementById('previewKategori').textContent = d.kategori || '-';
   document.getElementById('previewTajuk').textContent = d.tajuk || '-';
-  document.getElementById('previewTarikhMula').textContent = d.tarikh_mula || '-';
-  document.getElementById('previewTarikhTamat').textContent = d.tarikh_tamat || '-';
+  document.getElementById('previewTarikhMula').textContent = formatTarikh(d.tarikh_mula);
+  document.getElementById('previewTarikhTamat').textContent = formatTarikh(d.tarikh_tamat);
 
   // Populate edit fields
   document.getElementById('editNama').value = d.nama || (currentUser ? currentUser.nama : '');
   document.getElementById('editTajuk').value = d.tajuk || '';
-  document.getElementById('editTarikhMula').value = d.tarikh_mula || '';
+  document.getElementById('editTarikhMula').value = formatTarikh(d.tarikh_mula);
   document.getElementById('editTarikhTamat').value = d.tarikh_tamat || '';
 
   const sel = document.getElementById('editKategori');
@@ -1114,7 +1136,7 @@ function populatePreview(d) {
     jam = kiraBilanganHari(d.tarikh_mula, tarikhTamat) * 8;
   }
   // Set tarikh tamat dalam edit field
-  document.getElementById('editTarikhTamat').value = tarikhTamat || '';
+  document.getElementById('editTarikhTamat').value = formatTarikh(tarikhTamat);
   document.getElementById('editJam').value = jam || 8;
   document.getElementById('previewJam').textContent = jam || 8;
 
@@ -1122,22 +1144,33 @@ function populatePreview(d) {
 }
 
 function kiraBilanganHari(mula, tamat) {
-  const d1 = new Date(mula), d2 = new Date(tamat);
-  return Math.round((d2 - d1) / (1000*60*60*24)) + 1;
+  // Terima kedua-dua format: YYYY-MM-DD atau dd/mm/yyyy
+  const toDate = (s) => {
+    if (!s) return null;
+    if (s.includes('/')) {
+      const p = s.split('/');
+      return new Date(p[2], p[1]-1, p[0]);
+    }
+    return new Date(s);
+  };
+  const d1 = toDate(mula), d2 = toDate(tamat);
+  if (!d1 || !d2) return 1;
+  const diff = Math.round((d2 - d1) / (1000*60*60*24)) + 1;
+  return diff < 1 ? 1 : diff;
 }
 
 function kiraSemula() {
   const mula = document.getElementById('editTarikhMula').value;
   const tamat = document.getElementById('editTarikhTamat').value;
-  if (mula) {
-    // Kalau tarikh tamat kosong atau sama dengan mula = 1 hari = 8 jam
-    const tarikhTamat = tamat || mula;
+  if (mula && mula.length === 10) {
+    const tarikhTamat = (tamat && tamat.length === 10) ? tamat : mula;
     const hari = kiraBilanganHari(mula, tarikhTamat);
     const jam = hari * 8;
     document.getElementById('editJam').value = jam;
     document.getElementById('previewJam').textContent = jam;
-    // Auto-isi tarikh tamat kalau kosong
-    if (!tamat) document.getElementById('editTarikhTamat').value = mula;
+    if (!tamat || tamat.length < 10) {
+      document.getElementById('editTarikhTamat').value = mula;
+    }
   }
 }
 
@@ -1226,7 +1259,7 @@ function renderRekod(data) {
 
   const rows = data.map(r => `
     <tr>
-      <td>${r.tarikhMula || '-'}</td>
+      <td>${formatTarikh(r.tarikhMula)}</td>
       <td style="max-width:200px;">${r.tajuk}</td>
       <td><span class="cat-badge cat-${r.kategori==='Teknikal'?'teknikal':r.kategori==='Keselamatan'?'keselamatan':'bukan'}">${r.kategori}</span></td>
       <td style="font-family:'JetBrains Mono';font-weight:700;color:var(--teal);">${r.jam}</td>
