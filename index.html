@@ -583,10 +583,10 @@
       <div class="card-title">📤 Muat Naik Sijil</div>
 
       <div class="upload-zone" id="uploadZone">
-        <input type="file" id="fileInput" accept="image/*,application/pdf" onchange="handleFile(event)">
+        <input type="file" id="fileInput" accept="image/jpeg,image/png,image/webp,image/gif,application/pdf" onchange="handleFile(event)">
         <div class="upload-icon">🏅</div>
         <div class="upload-title">Klik atau seret sijil ke sini</div>
-        <div class="upload-sub">Menyokong: JPG, PNG, WEBP, PDF (max 5MB)</div>
+        <div class="upload-sub">Menyokong: JPG, PNG, WEBP, GIF, PDF (max 10MB)</div>
       </div>
       <div id="imgPreviewWrap"></div>
 
@@ -791,7 +791,7 @@ const GAS_URL = (() => {
     return url.split('?')[0].replace(/\/dev$/, '/exec');
   }
   // Fallback — ganti dengan URL Apps Script jika host di tempat lain
-  return 'https://script.google.com/macros/s/AKfycbz8rBcOo0Et0ZL9EDXp1fnlZIRVK44-9HhcShKXaj20ZXjzydJVq7cSlWbgEj_DcOnw/exec';
+  return 'GANTI_DENGAN_URL_APPS_SCRIPT_ANDA';
 })();
 // Claude API key diuruskan oleh Vercel server — selamat, tidak terdedah
 
@@ -1020,8 +1020,8 @@ function logoutAdmin() {
 function handleFile(e) {
   const file = e.target.files[0];
   if (!file) return;
-  if (file.size > 5 * 1024 * 1024) {
-    alert('Fail terlalu besar. Maksimum 5MB.');
+  if (file.size > 10 * 1024 * 1024) {
+    alert('Fail terlalu besar. Maksimum 10MB.');
     return;
   }
   uploadedFile = file;
@@ -1108,11 +1108,13 @@ function populatePreview(d) {
 
   // Calculate jam
   let jam = d.jam;
-  if (!jam && d.tarikh_mula && d.tarikh_tamat) {
-    jam = kiraBilanganHari(d.tarikh_mula, d.tarikh_tamat) * 8;
-  } else if (!jam && d.tarikh_mula) {
-    jam = 8;
+  // Kalau tarikh tamat null, anggap 1 hari (sama dengan tarikh mula)
+  const tarikhTamat = d.tarikh_tamat || d.tarikh_mula;
+  if (!jam && d.tarikh_mula) {
+    jam = kiraBilanganHari(d.tarikh_mula, tarikhTamat) * 8;
   }
+  // Set tarikh tamat dalam edit field
+  document.getElementById('editTarikhTamat').value = tarikhTamat || '';
   document.getElementById('editJam').value = jam || 8;
   document.getElementById('previewJam').textContent = jam || 8;
 
@@ -1127,10 +1129,15 @@ function kiraBilanganHari(mula, tamat) {
 function kiraSemula() {
   const mula = document.getElementById('editTarikhMula').value;
   const tamat = document.getElementById('editTarikhTamat').value;
-  if (mula && tamat) {
-    const hari = kiraBilanganHari(mula, tamat);
-    document.getElementById('editJam').value = hari * 8;
-    document.getElementById('previewJam').textContent = hari * 8;
+  if (mula) {
+    // Kalau tarikh tamat kosong atau sama dengan mula = 1 hari = 8 jam
+    const tarikhTamat = tamat || mula;
+    const hari = kiraBilanganHari(mula, tarikhTamat);
+    const jam = hari * 8;
+    document.getElementById('editJam').value = jam;
+    document.getElementById('previewJam').textContent = jam;
+    // Auto-isi tarikh tamat kalau kosong
+    if (!tamat) document.getElementById('editTarikhTamat').value = mula;
   }
 }
 
