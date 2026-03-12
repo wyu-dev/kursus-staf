@@ -1,0 +1,1412 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sistem Pelaporan Kursus | ADTEC Kuantan</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --navy: #0a1628;
+    --navy-mid: #112240;
+    --navy-light: #1d3557;
+    --teal: #00b4d8;
+    --teal-glow: rgba(0,180,216,0.15);
+    --teal-dim: rgba(0,180,216,0.6);
+    --amber: #f4a261;
+    --red: #e63946;
+    --green: #2ec4b6;
+    --text: #ccd6f6;
+    --text-dim: #8892b0;
+    --border: rgba(0,180,216,0.2);
+    --card: rgba(17,34,64,0.85);
+  }
+
+  * { margin:0; padding:0; box-sizing:border-box; }
+
+  body {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    background: var(--navy);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* BG pattern */
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background:
+      radial-gradient(ellipse 80% 50% at 20% 10%, rgba(0,180,216,0.06) 0%, transparent 60%),
+      radial-gradient(ellipse 60% 40% at 80% 90%, rgba(244,162,97,0.04) 0%, transparent 50%);
+    pointer-events: none; z-index: 0;
+  }
+
+  /* ─── HEADER ─── */
+  header {
+    position: sticky; top: 0; z-index: 100;
+    background: rgba(10,22,40,0.95);
+    backdrop-filter: blur(16px);
+    border-bottom: 1px solid var(--border);
+    padding: 0 24px;
+    display: flex; align-items: center; justify-content: space-between;
+    height: 64px;
+  }
+  .logo {
+    display: flex; align-items: center; gap: 12px;
+  }
+  .logo-badge {
+    width: 36px; height: 36px;
+    background: linear-gradient(135deg, var(--teal), #0077b6);
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px; font-weight: 800; color: white;
+  }
+  .logo-text { font-size: 14px; font-weight: 700; color: var(--teal); letter-spacing: 0.5px; }
+  .logo-sub { font-size: 11px; color: var(--text-dim); font-weight: 400; }
+
+  /* NAV TABS */
+  .nav-tabs {
+    display: flex; gap: 4px;
+    background: rgba(255,255,255,0.04);
+    border-radius: 10px; padding: 4px;
+  }
+  .nav-tab {
+    padding: 7px 18px; border-radius: 7px;
+    font-size: 13px; font-weight: 600;
+    cursor: pointer; border: none;
+    background: transparent; color: var(--text-dim);
+    transition: all 0.2s;
+  }
+  .nav-tab:hover { color: var(--text); }
+  .nav-tab.active {
+    background: var(--teal); color: var(--navy);
+  }
+  .nav-tab.admin-tab { color: var(--amber); }
+  .nav-tab.admin-tab.active { background: var(--amber); color: var(--navy); }
+
+  /* USER BADGE */
+  .user-badge {
+    display: flex; align-items: center; gap: 8px;
+    background: var(--teal-glow); border: 1px solid var(--border);
+    border-radius: 20px; padding: 6px 14px;
+    font-size: 13px; font-weight: 600;
+  }
+  .user-badge .dot { width:8px; height:8px; background:var(--green); border-radius:50%; }
+
+  /* ─── MAIN ─── */
+  main {
+    position: relative; z-index: 1;
+    max-width: 900px; margin: 0 auto;
+    padding: 40px 24px;
+  }
+
+  /* ─── PAGES ─── */
+  .page { display: none; }
+  .page.active { display: block; animation: fadeUp 0.3s ease; }
+  @keyframes fadeUp {
+    from { opacity:0; transform:translateY(12px); }
+    to { opacity:1; transform:translateY(0); }
+  }
+
+  /* ─── CARD ─── */
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px; padding: 32px;
+    backdrop-filter: blur(12px);
+  }
+  .card + .card { margin-top: 20px; }
+  .card-title {
+    font-size: 18px; font-weight: 700; color: var(--teal);
+    margin-bottom: 24px; padding-bottom: 14px;
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; gap: 10px;
+  }
+
+  /* ─── FORM ELEMENTS ─── */
+  .form-group { margin-bottom: 20px; }
+  label {
+    display: block; font-size: 12px; font-weight: 700;
+    color: var(--text-dim); text-transform: uppercase;
+    letter-spacing: 0.8px; margin-bottom: 8px;
+  }
+  input, select, textarea {
+    width: 100%; padding: 12px 16px;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid var(--border);
+    border-radius: 10px; color: var(--text);
+    font-family: inherit; font-size: 14px;
+    transition: all 0.2s; outline: none;
+  }
+  input:focus, select:focus, textarea:focus {
+    border-color: var(--teal);
+    background: rgba(0,180,216,0.05);
+    box-shadow: 0 0 0 3px rgba(0,180,216,0.1);
+  }
+  select option { background: var(--navy-mid); color: var(--text); }
+
+  /* ─── BUTTONS ─── */
+  .btn {
+    padding: 12px 28px; border-radius: 10px;
+    font-family: inherit; font-size: 14px; font-weight: 700;
+    cursor: pointer; border: none; transition: all 0.2s;
+    display: inline-flex; align-items: center; gap: 8px;
+  }
+  .btn-primary {
+    background: var(--teal); color: var(--navy);
+  }
+  .btn-primary:hover { background: #00c8ef; transform: translateY(-1px); box-shadow: 0 6px 20px rgba(0,180,216,0.3); }
+  .btn-secondary {
+    background: rgba(255,255,255,0.07); color: var(--text);
+    border: 1px solid var(--border);
+  }
+  .btn-secondary:hover { background: rgba(255,255,255,0.12); }
+  .btn-danger { background: rgba(230,57,70,0.15); color: var(--red); border: 1px solid rgba(230,57,70,0.3); }
+  .btn-amber { background: var(--amber); color: var(--navy); }
+  .btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none !important; }
+  .btn-full { width: 100%; justify-content: center; }
+
+  /* ─── ALERT / MSG ─── */
+  .alert {
+    padding: 12px 16px; border-radius: 10px;
+    font-size: 13px; font-weight: 600; margin: 12px 0;
+    display: none;
+  }
+  .alert.show { display: flex; align-items: center; gap: 8px; }
+  .alert-success { background: rgba(46,196,182,0.15); border: 1px solid rgba(46,196,182,0.3); color: var(--green); }
+  .alert-error { background: rgba(230,57,70,0.12); border: 1px solid rgba(230,57,70,0.3); color: var(--red); }
+  .alert-info { background: var(--teal-glow); border: 1px solid var(--border); color: var(--teal); }
+  .alert-warn { background: rgba(244,162,97,0.12); border: 1px solid rgba(244,162,97,0.3); color: var(--amber); }
+
+  /* ─── UPLOAD ZONE ─── */
+  .upload-zone {
+    border: 2px dashed var(--border);
+    border-radius: 14px; padding: 48px 24px;
+    text-align: center; cursor: pointer;
+    transition: all 0.3s; position: relative;
+    overflow: hidden;
+  }
+  .upload-zone:hover, .upload-zone.drag-over {
+    border-color: var(--teal);
+    background: var(--teal-glow);
+  }
+  .upload-zone input[type=file] {
+    position: absolute; inset: 0;
+    opacity: 0; cursor: pointer; width: 100%; height: 100%;
+  }
+  .upload-icon { font-size: 40px; margin-bottom: 12px; }
+  .upload-title { font-size: 15px; font-weight: 700; margin-bottom: 6px; }
+  .upload-sub { font-size: 13px; color: var(--text-dim); }
+
+  /* ─── PREVIEW CARD ─── */
+  .preview-card {
+    background: rgba(0,180,216,0.05);
+    border: 1px solid rgba(0,180,216,0.3);
+    border-radius: 14px; padding: 20px;
+    margin-top: 20px; display: none;
+  }
+  .preview-card.show { display: block; animation: fadeUp 0.3s ease; }
+  .preview-grid {
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 16px; margin-bottom: 16px;
+  }
+  .preview-item label { margin-bottom: 4px; }
+  .preview-value {
+    font-size: 14px; font-weight: 600; color: var(--text);
+    padding: 10px 14px;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid var(--border); border-radius: 8px;
+    min-height: 40px;
+  }
+  .jam-badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: linear-gradient(135deg, var(--teal), #0077b6);
+    color: white; padding: 4px 14px; border-radius: 20px;
+    font-size: 22px; font-weight: 800;
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .jam-label { font-size: 12px; font-weight: 600; color: var(--text-dim); margin-top: 4px; }
+
+  /* ─── REKOD TABLE ─── */
+  .rekod-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .rekod-table th {
+    text-align: left; padding: 10px 14px;
+    background: rgba(0,180,216,0.08);
+    color: var(--teal); font-weight: 700; font-size: 11px;
+    text-transform: uppercase; letter-spacing: 0.6px;
+    border-bottom: 1px solid var(--border);
+  }
+  .rekod-table td {
+    padding: 12px 14px; border-bottom: 1px solid rgba(255,255,255,0.04);
+    color: var(--text);
+  }
+  .rekod-table tr:hover td { background: rgba(255,255,255,0.02); }
+  .cat-badge {
+    display: inline-block; padding: 3px 10px;
+    border-radius: 20px; font-size: 11px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.4px;
+  }
+  .cat-teknikal { background: rgba(0,180,216,0.2); color: var(--teal); }
+  .cat-bukan { background: rgba(244,162,97,0.2); color: var(--amber); }
+  .cat-keselamatan { background: rgba(230,57,70,0.2); color: #ff6b6b; }
+
+  /* ─── JAM METER ─── */
+  .jam-meter { margin: 4px 0; }
+  .meter-bar {
+    height: 6px; background: rgba(255,255,255,0.08);
+    border-radius: 3px; overflow: hidden;
+  }
+  .meter-fill {
+    height: 100%; border-radius: 3px;
+    transition: width 0.8s ease;
+    background: linear-gradient(90deg, var(--teal), #0077b6);
+  }
+  .meter-fill.danger { background: linear-gradient(90deg, #e63946, #ff6b6b); }
+  .meter-fill.warning { background: linear-gradient(90deg, var(--amber), #e9c46a); }
+
+  /* ─── ADMIN STATS ─── */
+  .stats-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 16px; margin-bottom: 24px;
+  }
+  .stat-card {
+    background: rgba(255,255,255,0.04); border: 1px solid var(--border);
+    border-radius: 14px; padding: 20px; text-align: center;
+  }
+  .stat-number {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 36px; font-weight: 700;
+    line-height: 1;
+  }
+  .stat-label { font-size: 12px; color: var(--text-dim); margin-top: 6px; font-weight: 600; }
+  .stat-teal .stat-number { color: var(--teal); }
+  .stat-green .stat-number { color: var(--green); }
+  .stat-red .stat-number { color: var(--red); }
+  .stat-amber .stat-number { color: var(--amber); }
+
+  /* FILTER BAR */
+  .filter-bar {
+    display: flex; gap: 10px; flex-wrap: wrap;
+    margin-bottom: 20px; align-items: center;
+  }
+  .filter-chip {
+    padding: 7px 16px; border-radius: 20px;
+    font-size: 12px; font-weight: 700; cursor: pointer;
+    border: 1px solid var(--border);
+    background: transparent; color: var(--text-dim);
+    transition: all 0.2s;
+  }
+  .filter-chip:hover { color: var(--text); border-color: var(--teal); }
+  .filter-chip.active { background: var(--teal); color: var(--navy); border-color: var(--teal); }
+
+  /* ─── ADMIN TABLE ─── */
+  .admin-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .admin-table th {
+    text-align: left; padding: 10px 14px;
+    background: rgba(0,180,216,0.06);
+    color: var(--teal); font-size: 11px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.6px;
+    border-bottom: 1px solid var(--border);
+    cursor: pointer; user-select: none;
+  }
+  .admin-table th:hover { color: #00c8ef; }
+  .admin-table td {
+    padding: 12px 14px;
+    border-bottom: 1px solid rgba(255,255,255,0.03);
+  }
+  .admin-table tr:hover td { background: rgba(255,255,255,0.02); }
+  .kurang-badge {
+    display: inline-flex; align-items: center; gap: 4px;
+    background: rgba(230,57,70,0.15); color: var(--red);
+    padding: 2px 10px; border-radius: 10px; font-size: 11px; font-weight: 700;
+  }
+  .cukup-badge {
+    display: inline-flex; align-items: center; gap: 4px;
+    background: rgba(46,196,182,0.15); color: var(--green);
+    padding: 2px 10px; border-radius: 10px; font-size: 11px; font-weight: 700;
+  }
+
+  /* KEYPAD */
+  .keypad-overlay {
+    position: fixed; inset: 0; z-index: 200;
+    background: rgba(0,0,0,0.7); backdrop-filter: blur(8px);
+    display: flex; align-items: center; justify-content: center;
+    display: none;
+  }
+  .keypad-overlay.show { display: flex; animation: fadeIn 0.2s ease; }
+  @keyframes fadeIn { from{opacity:0} to{opacity:1} }
+  .keypad-box {
+    background: var(--navy-mid); border: 1px solid var(--border);
+    border-radius: 20px; padding: 32px; width: 320px;
+    text-align: center;
+  }
+  .keypad-title { font-size: 16px; font-weight: 800; color: var(--amber); margin-bottom: 8px; }
+  .keypad-sub { font-size: 12px; color: var(--text-dim); margin-bottom: 24px; }
+  .keypad-dots { display: flex; justify-content: center; gap: 12px; margin-bottom: 24px; }
+  .keypad-dot {
+    width: 14px; height: 14px; border-radius: 50%;
+    border: 2px solid var(--border); transition: all 0.2s;
+  }
+  .keypad-dot.filled { background: var(--amber); border-color: var(--amber); }
+  .keypad-grid {
+    display: grid; grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+  }
+  .key-btn {
+    padding: 16px; border-radius: 12px;
+    background: rgba(255,255,255,0.06); border: 1px solid var(--border);
+    color: var(--text); font-family: 'JetBrains Mono', monospace;
+    font-size: 18px; font-weight: 700; cursor: pointer;
+    transition: all 0.15s;
+  }
+  .key-btn:hover { background: rgba(244,162,97,0.15); border-color: var(--amber); color: var(--amber); }
+  .key-btn:active { transform: scale(0.93); }
+  .key-btn.del { color: var(--red); font-size: 14px; font-family: inherit; }
+  .key-btn.empty { visibility: hidden; }
+
+  /* LOADING */
+  .loading-overlay {
+    position: fixed; inset: 0; z-index: 300;
+    background: rgba(0,0,0,0.5); backdrop-filter: blur(4px);
+    display: none; align-items: center; justify-content: center;
+    flex-direction: column; gap: 16px;
+  }
+  .loading-overlay.show { display: flex; }
+  .spinner {
+    width: 48px; height: 48px;
+    border: 3px solid rgba(0,180,216,0.2);
+    border-top-color: var(--teal);
+    border-radius: 50%; animation: spin 0.8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .loading-text { font-size: 14px; font-weight: 600; color: var(--teal); }
+
+  /* IMAGE PREVIEW */
+  .img-thumb {
+    max-width: 100%; max-height: 200px;
+    border-radius: 10px; margin-top: 12px;
+    border: 1px solid var(--border);
+  }
+
+  /* MOBILE */
+  @media (max-width: 640px) {
+    header { padding: 0 16px; }
+    .nav-tabs { gap: 2px; }
+    .nav-tab { padding: 6px 12px; font-size: 12px; }
+    main { padding: 24px 16px; }
+    .card { padding: 20px; }
+    .preview-grid { grid-template-columns: 1fr; }
+    .stats-grid { grid-template-columns: repeat(2, 1fr); }
+    .logo-sub { display: none; }
+  }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+  .section-title {
+    font-size: 28px; font-weight: 800;
+    margin-bottom: 6px;
+  }
+  .section-sub { font-size: 14px; color: var(--text-dim); margin-bottom: 32px; }
+
+  .divider { height: 1px; background: var(--border); margin: 24px 0; }
+
+  .jam-total-row {
+    display: flex; align-items: center; justify-content: space-between;
+    background: rgba(0,180,216,0.06); border: 1px solid var(--border);
+    border-radius: 12px; padding: 16px 20px;
+    margin-bottom: 20px;
+  }
+  .jam-total-label { font-size: 13px; color: var(--text-dim); font-weight: 600; }
+  .jam-total-num {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 28px; font-weight: 800; color: var(--teal);
+  }
+  .jam-target { font-size: 12px; color: var(--text-dim); }
+
+  .empty-state {
+    text-align: center; padding: 48px 24px;
+    color: var(--text-dim);
+  }
+  .empty-icon { font-size: 48px; margin-bottom: 12px; }
+  .empty-text { font-size: 14px; }
+
+  input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; }
+</style>
+</head>
+<body>
+
+<!-- LOADING -->
+<div class="loading-overlay" id="loadingOverlay">
+  <div class="spinner"></div>
+  <div class="loading-text" id="loadingText">Memproses...</div>
+</div>
+
+<!-- ADMIN KEYPAD -->
+<div class="keypad-overlay" id="keypadOverlay">
+  <div class="keypad-box">
+    <div class="keypad-title">🔐 ADMIN</div>
+    <div class="keypad-sub">Masukkan kata laluan admin</div>
+    <div class="keypad-dots">
+      <div class="keypad-dot" id="d0"></div>
+      <div class="keypad-dot" id="d1"></div>
+      <div class="keypad-dot" id="d2"></div>
+      <div class="keypad-dot" id="d3"></div>
+    </div>
+    <div class="keypad-grid">
+      <button class="key-btn" onclick="keyPress('1')">1</button>
+      <button class="key-btn" onclick="keyPress('2')">2</button>
+      <button class="key-btn" onclick="keyPress('3')">3</button>
+      <button class="key-btn" onclick="keyPress('4')">4</button>
+      <button class="key-btn" onclick="keyPress('5')">5</button>
+      <button class="key-btn" onclick="keyPress('6')">6</button>
+      <button class="key-btn" onclick="keyPress('7')">7</button>
+      <button class="key-btn" onclick="keyPress('8')">8</button>
+      <button class="key-btn" onclick="keyPress('9')">9</button>
+      <button class="key-btn empty"></button>
+      <button class="key-btn" onclick="keyPress('0')">0</button>
+      <button class="key-btn del" onclick="keyDelete()">⌫</button>
+    </div>
+    <div id="keypadError" class="alert alert-error" style="margin-top:16px;"></div>
+    <button class="btn btn-secondary btn-full" style="margin-top:16px;" onclick="closeKeypad()">Batal</button>
+  </div>
+</div>
+
+<!-- HEADER -->
+<header>
+  <div class="logo">
+    <div class="logo-badge">A</div>
+    <div>
+      <div class="logo-text">ADTEC KUANTAN</div>
+      <div class="logo-sub">Sistem Pelaporan Kursus 2026</div>
+    </div>
+  </div>
+  <nav class="nav-tabs">
+    <button class="nav-tab active" onclick="showPage('daftar', this)">📋 Daftar</button>
+    <button class="nav-tab" onclick="showPage('login', this)">🔑 Log Masuk</button>
+    <button class="nav-tab" id="staffTabBtn" style="display:none;" onclick="showPage('staff', this)">📁 Rekod Saya</button>
+    <button class="nav-tab admin-tab" onclick="adminTabClick(this)">⚙️ Admin</button>
+  </nav>
+  <div class="user-badge" id="userBadge" style="display:none;">
+    <div class="dot"></div>
+    <span id="userBadgeName"></span>
+  </div>
+</header>
+
+<main>
+
+  <!-- ═══ TAB DAFTAR ═══ -->
+  <div class="page active" id="page-daftar">
+    <div class="section-title">Pendaftaran Staf</div>
+    <div class="section-sub">Daftar akaun menggunakan nama rasmi anda. Setiap nama hanya boleh didaftarkan sekali.</div>
+
+    <div class="card">
+      <div class="card-title">📝 Borang Pendaftaran</div>
+
+      <div class="form-group">
+        <label>Nama Penuh (Pilih dari senarai)</label>
+        <select id="daftarNama">
+          <option value="">-- Pilih nama anda --</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label>No. Kad Pengenalan (tanpa sempang)</label>
+        <input type="text" id="daftarIC" placeholder="Contoh: 850312105432" maxlength="12"
+          oninput="this.value=this.value.replace(/\D/g,'')">
+        <div style="font-size:11px;color:var(--text-dim);margin-top:6px;">
+          ⚠️ 4 digit terakhir akan menjadi kata laluan log masuk anda
+        </div>
+      </div>
+
+      <div class="alert" id="daftarAlert"></div>
+
+      <button class="btn btn-primary btn-full" onclick="daftarStaf()">
+        ✅ Daftar Sekarang
+      </button>
+    </div>
+  </div>
+
+  <!-- ═══ TAB LOGIN ═══ -->
+  <div class="page" id="page-login">
+    <div class="section-title">Log Masuk</div>
+    <div class="section-sub">Log masuk dengan nama dan 4 digit terakhir No. Kad Pengenalan anda.</div>
+
+    <div class="card">
+      <div class="card-title">🔑 Log Masuk Staf</div>
+
+      <div class="form-group">
+        <label>Nama Penuh</label>
+        <select id="loginNama">
+          <option value="">-- Pilih nama anda --</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label>Kata Laluan (4 digit terakhir IC)</label>
+        <input type="password" id="loginPass" maxlength="4"
+          placeholder="●●●●"
+          oninput="this.value=this.value.replace(/\D/g,'')"
+          onkeydown="if(event.key==='Enter')loginStaf()">
+      </div>
+
+      <div class="alert" id="loginAlert"></div>
+
+      <button class="btn btn-primary btn-full" onclick="loginStaf()">
+        🚀 Log Masuk
+      </button>
+    </div>
+  </div>
+
+  <!-- ═══ TAB STAFF (Dashboard) ═══ -->
+  <div class="page" id="page-staff">
+    <div class="section-title" id="staffGreeting">Selamat Datang</div>
+    <div class="section-sub">Rekod kursus tahun 2026</div>
+
+    <!-- JAM SUMMARY -->
+    <div class="jam-total-row">
+      <div>
+        <div class="jam-total-label">Jumlah Jam Berkursus 2026</div>
+        <div class="jam-target">Sasaran: 40 jam setahun</div>
+      </div>
+      <div style="text-align:right;">
+        <div class="jam-total-num" id="totalJamDisplay">0</div>
+        <div class="jam-target">jam</div>
+      </div>
+    </div>
+
+    <!-- UPLOAD SIJIL -->
+    <div class="card">
+      <div class="card-title">📤 Muat Naik Sijil</div>
+
+      <div class="upload-zone" id="uploadZone">
+        <input type="file" id="fileInput" accept="image/*,application/pdf" onchange="handleFile(event)">
+        <div class="upload-icon">🏅</div>
+        <div class="upload-title">Klik atau seret sijil ke sini</div>
+        <div class="upload-sub">Menyokong: JPG, PNG, WEBP, PDF (max 5MB)</div>
+      </div>
+      <div id="imgPreviewWrap"></div>
+
+      <!-- AI EXTRACT RESULT -->
+      <div class="preview-card" id="previewCard">
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:16px;">
+          <div style="font-size:14px; font-weight:700; color:var(--teal);">✨ Hasil Analisis AI</div>
+          <div style="display:flex; align-items:center; gap:10px;">
+            <div style="text-align:center;">
+              <div class="jam-badge" id="previewJam">0</div>
+              <div class="jam-label">JAM</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="preview-grid">
+          <div class="preview-item">
+            <label>Nama (dalam sijil)</label>
+            <div class="preview-value" id="previewNama">-</div>
+          </div>
+          <div class="preview-item">
+            <label>Kategori</label>
+            <div class="preview-value" id="previewKategori">-</div>
+          </div>
+          <div class="preview-item" style="grid-column: 1/-1;">
+            <label>Tajuk Kursus / Sijil</label>
+            <div class="preview-value" id="previewTajuk">-</div>
+          </div>
+          <div class="preview-item">
+            <label>Tarikh Mula</label>
+            <div class="preview-value" id="previewTarikhMula">-</div>
+          </div>
+          <div class="preview-item">
+            <label>Tarikh Tamat</label>
+            <div class="preview-value" id="previewTarikhTamat">-</div>
+          </div>
+        </div>
+
+        <!-- EDITABLE FIELDS -->
+        <div class="divider"></div>
+        <div style="font-size:12px; color:var(--text-dim); margin-bottom:12px; font-weight:700;">
+          ✏️ SEMAK & PINDA JIKA PERLU
+        </div>
+        <div class="preview-grid">
+          <div class="preview-item">
+            <label>Nama (edit)</label>
+            <input type="text" id="editNama">
+          </div>
+          <div class="preview-item">
+            <label>Kategori</label>
+            <select id="editKategori">
+              <option value="Teknikal">Teknikal</option>
+              <option value="Bukan Teknikal">Bukan Teknikal</option>
+              <option value="Keselamatan">Keselamatan</option>
+            </select>
+          </div>
+          <div class="preview-item" style="grid-column:1/-1;">
+            <label>Tajuk Kursus</label>
+            <input type="text" id="editTajuk">
+          </div>
+          <div class="preview-item">
+            <label>Tarikh Mula</label>
+            <input type="date" id="editTarikhMula" onchange="kiraSemula()">
+          </div>
+          <div class="preview-item">
+            <label>Tarikh Tamat</label>
+            <input type="date" id="editTarikhTamat" onchange="kiraSemula()">
+          </div>
+          <div class="preview-item">
+            <label>Bilangan Jam</label>
+            <input type="number" id="editJam" min="1" max="999">
+          </div>
+        </div>
+
+        <div class="alert" id="simpanAlert"></div>
+
+        <div style="display:flex; gap:10px; margin-top:8px;">
+          <button class="btn btn-primary" style="flex:1;" onclick="simpanKursus()">
+            💾 Simpan Rekod
+          </button>
+          <button class="btn btn-secondary" onclick="resetUpload()">
+            🔄 Reset
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- REKOD KURSUS -->
+    <div class="card">
+      <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:20px;">
+        <div class="card-title" style="margin:0; border:none; padding:0;">📚 Rekod Kursus 2026</div>
+        <button class="btn btn-secondary" style="font-size:12px;" onclick="loadRekod()">🔄 Muat Semula</button>
+      </div>
+      <div id="rekodContainer">
+        <div class="empty-state">
+          <div class="empty-icon">📭</div>
+          <div class="empty-text">Tiada rekod lagi. Muat naik sijil pertama anda!</div>
+        </div>
+      </div>
+    </div>
+
+    <div style="margin-top:20px; text-align:center;">
+      <button class="btn btn-danger" onclick="logoutStaf()">🚪 Log Keluar</button>
+    </div>
+  </div>
+
+  <!-- ═══ TAB ADMIN ═══ -->
+  <div class="page" id="page-admin">
+    <div class="section-title">Panel Admin</div>
+    <div class="section-sub">Analisis bilangan jam berkursus semua staf ADTEC Kuantan 2026</div>
+
+    <!-- STATS -->
+    <div class="stats-grid">
+      <div class="stat-card stat-teal">
+        <div class="stat-number" id="sTotalStaf">-</div>
+        <div class="stat-label">Jumlah Staf</div>
+      </div>
+      <div class="stat-card stat-green">
+        <div class="stat-number" id="sCukup">-</div>
+        <div class="stat-label">≥ 40 Jam ✅</div>
+      </div>
+      <div class="stat-card stat-red">
+        <div class="stat-number" id="sKurang">-</div>
+        <div class="stat-label">< 40 Jam ⚠️</div>
+      </div>
+      <div class="stat-card stat-amber">
+        <div class="stat-number" id="sTotalKursus">-</div>
+        <div class="stat-label">Jumlah Entri Kursus</div>
+      </div>
+    </div>
+
+    <!-- FILTER + CARIAN -->
+    <div style="display:flex; gap:12px; flex-wrap:wrap; margin-bottom:20px; align-items:center;">
+      <div class="filter-bar" style="margin:0; flex:1;">
+        <button class="filter-chip active" onclick="filterAdmin('semua', this)">Semua</button>
+        <button class="filter-chip" onclick="filterAdmin('Teknikal', this)">Teknikal</button>
+        <button class="filter-chip" onclick="filterAdmin('Bukan Teknikal', this)">Bukan Teknikal</button>
+        <button class="filter-chip" onclick="filterAdmin('Keselamatan', this)">Keselamatan</button>
+        <button class="filter-chip" onclick="filterAdmin('kurang40', this)" style="color:var(--red);">⚠️ < 40 Jam</button>
+      </div>
+      <input type="text" id="adminCarian" placeholder="🔍 Cari nama staf..."
+        style="max-width:220px;" oninput="renderAdminTable()">
+    </div>
+
+    <!-- TABLE -->
+    <div class="card" style="padding:0; overflow:hidden;">
+      <div style="overflow-x:auto;">
+        <table class="admin-table" id="adminTable">
+          <thead>
+            <tr>
+              <th onclick="sortAdmin('nama')">NAMA STAF ↕</th>
+              <th onclick="sortAdmin('teknikal')">TEKNIKAL</th>
+              <th onclick="sortAdmin('bukanTeknikal')">BUKAN TEKNIKAL</th>
+              <th onclick="sortAdmin('keselamatan')">KESELAMATAN</th>
+              <th onclick="sortAdmin('total')">JUMLAH JAM ↕</th>
+              <th>STATUS</th>
+              <th>BIL. KURSUS</th>
+            </tr>
+          </thead>
+          <tbody id="adminTableBody">
+            <tr><td colspan="7" class="empty-state">
+              <div class="empty-icon">⏳</div>
+              <div>Memuatkan data...</div>
+            </td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- TAMBAH NAMA STAF -->
+    <div class="card" style="margin-top:24px;">
+      <div class="card-title">➕ Tambah Nama Staf</div>
+      <div style="display:flex; gap:12px; align-items:flex-end;">
+        <div class="form-group" style="flex:1; margin:0;">
+          <label>Nama Penuh Staf Baru</label>
+          <input type="text" id="namaBaru" placeholder="Nama penuh dalam huruf besar..."
+            style="text-transform:uppercase;"
+            oninput="this.value=this.value.toUpperCase()">
+        </div>
+        <button class="btn btn-amber" onclick="tambahNamaStaf()">➕ Tambah</button>
+      </div>
+      <div class="alert" id="tambahAlert" style="margin-top:12px;"></div>
+    </div>
+
+    <div style="margin-top:20px; text-align:center;">
+      <button class="btn btn-danger" onclick="logoutAdmin()">🚪 Log Keluar Admin</button>
+    </div>
+  </div>
+
+</main>
+
+<script>
+// ═══════════════════════════════════════════════
+// KONFIGURASI — GANTI URL APPS SCRIPT SELEPAS DEPLOY
+// ═══════════════════════════════════════════════
+// Bila host dalam Apps Script, URL adalah sama dengan page URL
+// Buang /exec di hujung kalau ada, kemudian tambah semula
+const GAS_URL = (() => {
+  const url = window.location.href;
+  // Kalau dalam Apps Script (url mengandungi /macros/s/)
+  if (url.includes('/macros/s/')) {
+    return url.split('?')[0].replace(/\/dev$/, '/exec');
+  }
+  // Fallback — ganti dengan URL Apps Script jika host di tempat lain
+  return 'GANTI_DENGAN_URL_APPS_SCRIPT_ANDA';
+})();
+const CLAUDE_API_KEY = 'GANTI_DENGAN_CLAUDE_API_KEY';
+
+// ═══════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════
+let currentUser = null;    // { nama, ic4 }
+let isAdmin = false;
+let uploadedFile = null;
+let uploadedBase64 = null;
+let adminData = [];        // cache admin data
+let adminFilter = 'semua';
+let adminSort = { col: 'nama', dir: 1 };
+
+// ═══════════════════════════════════════════════
+// SENARAI NAMA (hardcoded — boleh ganti dengan fetch dari GAS)
+// ═══════════════════════════════════════════════
+const SENARAI_NAMA = [
+  "NORRASIDAH AINI BINTI ISMAIL","WAN ASMAWI BIN WAN SHARIFF","MAZLYSHAM BIN MOHAMAD",
+  "SURIANI BINTI ROZAHAN","AZRUL NORAZMI BIN ABDULLAH","EDY SYAHRUL BIN OMAR",
+  "MUHAMMAD ASRUF BIN MUHAMMAD","MOHD MARZUKI BIN ZAINUDIN","MOHD AMIRIDWAN BIN ABDUL RAHMAN",
+  "NORZARINA BINTI HAMIZAN","MOHD RAUF BIN ALI KHAN","ZAWANI BIN ISMAIL",
+  "MOHD JAAFAR BIN ISMAIL","ROSLI BIN AB RASHID","NOOR AINI BINTI AHMAD",
+  "SURAYA BINTI IBRAHIM","DR. FATIMAH BINTI MOHD ZULKAFALY","SUHANA BINTI MOKHTAR",
+  "SAIFUL BAHARI BIN MOHD RASID","WAHYUDDIN BIN MOHD YUSOF","MOHAMMAD AKHMAL BIN MUHAMED SUPIAN",
+  "ZULKIEFLY BIN AHMAD","MOHD SOKRI BIN SAFIE","MOHAMAD BIN IBRAHIM",
+  "MUHAMMAD RUDY BIN JEFRI","KHAIRUL BIN AB RAHMAN","NORAIDA BINTI ISMAIL",
+  "IZURAIDA BINTI HARUN","MOHD SABRI BIN ABU BAKAR @ ISMAIL","ZULHASBI BIN MUSTAFA",
+  "SUHAIMI BIN KAMARUDIN","RAHIMEI ISKANDAR BIN ABD MALIK","WAN MOHD HELMI BIN WAN JUSOH",
+  "AZHAR BIN AHMAD ZAKI","NIK ROSMIZAN BIN MUHAMED","MOHD AZHARRUDDIN BIN ABD AZIZ",
+  "MALIKI BIN CHE YAACOB","MOHD BADARUDIN BIN SULONG","WAN AHMAD BIN WAN SUDIN",
+  "NORAZMEI BIN ABD MALEK","NURUL NADIAH BINTI AB WAHAB","MOHD SHAHARIN BIN OMAR",
+  "ZAHABAR BIN MOHD SALIM","SAARI BIN ISHAK","ABDUL MAJID BIN OTHMAN",
+  "NORAKMAL BIN MAAMOR","FATHI SAFWAN BIN CHE YUSOF","KARMILA BINTI AB.RAHMAN",
+  "KHAIRUDDIN BIN KHAMIS","MOHD AMRI BIN MD DAUD","MOHD AZIZUL BIN JUNOH",
+  "MOHD RUBY BIN MOHAMMAD NOR","MUHAMAD HAFIZ BIN AWANG","NOOR HASHIMAH BINTI ABU NAIM",
+  "SYAMSURIZAL BIN DESA","TASIRIHAFIZAN BIN AB RAHMAN","ZURIATI BINTI OSMAN",
+  "SAHARNI BINTI ABDULLAH","JOELIADY BIN SERUDIN","MOHD FAIZAL BIN ARSHAD",
+  "NURUL AIDA BINTI SULONG","HAFDAN BIN HAMZAH","AHMAD AMRI BIN MAHMAD REZALI",
+  "HASLINDA BINTI AHMAD","MOHD RAZALI BIN ALI DIN","ABDULLAH BIN TAHAR",
+  "FAKHARUL ZAMAN BIN FAUZI","SITI AISHAH BINTI HUSIN","ERNEI FAZIRA BINTI MUSTAFA",
+  "NOR HAYATI BINTI ABDUL SAMAD","AHMAD BUSTAMAN BIN RUSLI","WAN BURHANUDDIN BIN WAN ABD AZIZ",
+  "FAUZIAH BINTI AHMAD ZAWAWI","AHMAD MUNIR BIN AHMAD MUJOR","AHMADI ELMI BIN MOHD ARIFIN",
+  "MOHD ARIF BIN ABDULLAH","MOHD SHAHRIZAL BIN YUSOF","NUR AIMUNI BINTI ABD. HADI",
+  "MOHD ZULKIFLY BIN FIEE","KHAIZIL SHARIKIE BIN ARIPIN","NADIAH BINTI JAFFAR",
+  "MOHD AMIRUL HIZWAN BIN ABDUL RAHIM","MOHD RAMLEE BIN ABDUL GHANI",
+  "MOHD FAZZUL FITRY BIN ABU BAKAR","NOR SUJILAWATI BINTI AB.GHANI",
+  "NOR ASHIKIN BINTI ABD GHANI","SITI FARHANA BINTI FATWAN","MOHD ASRI BIN AHMAD NORDDIN",
+  "RAMLI BIN ABDULLAH","MD AZMI BIN MOKDEH","MAT NASER BIN MAT",
+  "MOHD NOOR BIN RAZALI @ SULONG","ASILAH BINTI MUSTAFAR","MOHD ALIFF BIN YASAK",
+  "NUR ASLIN BINTI MD ASRI","SHARIFAH BINTI SUDIN","EFFA EMILLIYA BINTI ROSLI",
+  "LENI @ CHANTHIRAVATHANI A/P POOBALAN","AERSYAD BIN ABD GHAFFAR",
+  "JUWAIDY ASMAWI BIN ZULKEFLI","SUZAILA BINTI WAHAB @ WAHIB",
+  "SHAHRIZAL BIN ABU BAKAR","SHAIRAN BIN SHAARI"
+].sort();
+
+// ═══════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════
+document.addEventListener('DOMContentLoaded', () => {
+  populateDropdowns();
+});
+
+function populateDropdowns() {
+  const selects = ['daftarNama', 'loginNama'];
+  selects.forEach(id => {
+    const sel = document.getElementById(id);
+    SENARAI_NAMA.forEach(n => {
+      const opt = document.createElement('option');
+      opt.value = n; opt.textContent = n;
+      sel.appendChild(opt);
+    });
+  });
+}
+
+// ═══════════════════════════════════════════════
+// NAVIGATION
+// ═══════════════════════════════════════════════
+function showPage(id, btn) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('page-' + id).classList.add('active');
+  if (btn) btn.classList.add('active');
+}
+
+function adminTabClick(btn) {
+  if (isAdmin) { showPage('admin', btn); return; }
+  openKeypad();
+}
+
+// ═══════════════════════════════════════════════
+// KEYPAD
+// ═══════════════════════════════════════════════
+let keypadVal = '';
+function openKeypad() {
+  keypadVal = '';
+  updateDots();
+  document.getElementById('keypadError').classList.remove('show');
+  document.getElementById('keypadOverlay').classList.add('show');
+}
+function closeKeypad() {
+  document.getElementById('keypadOverlay').classList.remove('show');
+}
+function keyPress(d) {
+  if (keypadVal.length >= 4) return;
+  keypadVal += d;
+  updateDots();
+  if (keypadVal.length === 4) setTimeout(checkAdminPin, 150);
+}
+function keyDelete() {
+  keypadVal = keypadVal.slice(0, -1);
+  updateDots();
+}
+function updateDots() {
+  for (let i = 0; i < 4; i++) {
+    document.getElementById('d'+i).classList.toggle('filled', i < keypadVal.length);
+  }
+}
+function checkAdminPin() {
+  if (keypadVal === '7454') {
+    isAdmin = true;
+    closeKeypad();
+    const adminBtn = document.querySelector('.admin-tab');
+    showPage('admin', adminBtn);
+    loadAdminData();
+  } else {
+    const err = document.getElementById('keypadError');
+    err.textContent = '❌ Kata laluan salah!';
+    err.classList.add('show');
+    keypadVal = '';
+    updateDots();
+    setTimeout(() => err.classList.remove('show'), 2000);
+  }
+}
+
+// ═══════════════════════════════════════════════
+// GAS CALL HELPER
+// Guna GET + query params untuk elak CORS issue
+// ═══════════════════════════════════════════════
+async function gasCall(action, data = {}) {
+  const encoded = encodeURIComponent(JSON.stringify(data));
+  const url = `${GAS_URL}?action=${action}&data=${encoded}`;
+  const res = await fetch(url, { redirect: 'follow' });
+  return await res.json();
+}
+
+// ═══════════════════════════════════════════════
+// DAFTAR
+// ═══════════════════════════════════════════════
+async function daftarStaf() {
+  const nama = document.getElementById('daftarNama').value.trim();
+  const ic = document.getElementById('daftarIC').value.trim();
+  const alertEl = document.getElementById('daftarAlert');
+
+  if (!nama) return showAlert(alertEl, 'error', '⚠️ Sila pilih nama anda.');
+  if (ic.length !== 12) return showAlert(alertEl, 'error', '⚠️ No IC mesti 12 digit.');
+
+  showLoading('Mendaftarkan akaun...');
+  try {
+    const res = await gasCall('daftar', { nama, ic4: ic.slice(-4) });
+    if (res.ok) {
+      showAlert(alertEl, 'success', '✅ Berjaya! Sila log masuk sekarang.');
+      document.getElementById('daftarNama').value = '';
+      document.getElementById('daftarIC').value = '';
+    } else {
+      showAlert(alertEl, 'error', '❌ ' + (res.msg || 'Ralat semasa mendaftar.'));
+    }
+  } catch(e) {
+    showAlert(alertEl, 'error', '❌ Gagal berhubung dengan pelayan.');
+  }
+  hideLoading();
+}
+
+// ═══════════════════════════════════════════════
+// LOGIN
+// ═══════════════════════════════════════════════
+async function loginStaf() {
+  const nama = document.getElementById('loginNama').value.trim();
+  const pass = document.getElementById('loginPass').value.trim();
+  const alertEl = document.getElementById('loginAlert');
+
+  if (!nama) return showAlert(alertEl, 'error', '⚠️ Sila pilih nama anda.');
+  if (pass.length !== 4) return showAlert(alertEl, 'error', '⚠️ Masukkan 4 digit kata laluan.');
+
+  showLoading('Mengesahkan...');
+  try {
+    const res = await gasCall('login', { nama, ic4: pass });
+    if (res.ok) {
+      currentUser = { nama, ic4: pass };
+      document.getElementById('userBadge').style.display = 'flex';
+      document.getElementById('userBadgeName').textContent = nama.split(' ')[0];
+      document.getElementById('staffTabBtn').style.display = '';
+      document.getElementById('staffGreeting').textContent = 'Selamat Datang, ' + nama.split(' ')[0] + '!';
+
+      const staffBtn = document.getElementById('staffTabBtn');
+      showPage('staff', staffBtn);
+      loadRekod();
+    } else {
+      showAlert(alertEl, 'error', '❌ Nama atau kata laluan salah.');
+    }
+  } catch(e) {
+    showAlert(alertEl, 'error', '❌ Gagal berhubung dengan pelayan.');
+  }
+  hideLoading();
+}
+
+function logoutStaf() {
+  currentUser = null;
+  document.getElementById('userBadge').style.display = 'none';
+  document.getElementById('staffTabBtn').style.display = 'none';
+  document.getElementById('loginPass').value = '';
+  resetUpload();
+  const daftarBtn = document.querySelector('.nav-tab');
+  showPage('daftar', daftarBtn);
+}
+
+function logoutAdmin() {
+  isAdmin = false;
+  const daftarBtn = document.querySelector('.nav-tab');
+  showPage('daftar', daftarBtn);
+}
+
+// ═══════════════════════════════════════════════
+// FILE UPLOAD
+// ═══════════════════════════════════════════════
+function handleFile(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  if (file.size > 5 * 1024 * 1024) {
+    alert('Fail terlalu besar. Maksimum 5MB.');
+    return;
+  }
+  uploadedFile = file;
+
+  const reader = new FileReader();
+  reader.onload = (ev) => {
+    uploadedBase64 = ev.target.result.split(',')[1];
+    const mimeType = file.type;
+
+    // Show preview
+    const wrap = document.getElementById('imgPreviewWrap');
+    if (mimeType.startsWith('image/')) {
+      wrap.innerHTML = `<img src="${ev.target.result}" class="img-thumb" alt="preview">`;
+    } else {
+      wrap.innerHTML = `<div style="padding:12px 0;font-size:13px;color:var(--teal);">📄 ${file.name}</div>`;
+    }
+
+    extractWithAI(uploadedBase64, mimeType);
+  };
+  reader.readAsDataURL(file);
+}
+
+// Drag & drop
+const uz = document.getElementById('uploadZone');
+uz.addEventListener('dragover', e => { e.preventDefault(); uz.classList.add('drag-over'); });
+uz.addEventListener('dragleave', () => uz.classList.remove('drag-over'));
+uz.addEventListener('drop', e => {
+  e.preventDefault(); uz.classList.remove('drag-over');
+  const file = e.dataTransfer.files[0];
+  if (file) {
+    document.getElementById('fileInput').files = e.dataTransfer.files;
+    handleFile({ target: { files: [file] } });
+  }
+});
+
+// ═══════════════════════════════════════════════
+// AI EXTRACT
+// ═══════════════════════════════════════════════
+async function extractWithAI(base64, mimeType) {
+  showLoading('AI sedang menganalisis sijil...');
+
+  const prompt = `Analisis sijil/dokumen kursus ini dan ekstrak maklumat berikut dalam format JSON:
+{
+  "nama": "nama penerima sijil",
+  "tajuk": "tajuk penuh kursus/seminar/webinar/latihan",
+  "kategori": "Teknikal atau Bukan Teknikal atau Keselamatan",
+  "tarikh_mula": "YYYY-MM-DD atau null",
+  "tarikh_tamat": "YYYY-MM-DD atau null",
+  "jam": nombor jam (integer) atau null jika tidak tersebut
+}
+
+Peraturan kategori:
+- Teknikal: kursus berkaitan kemahiran vokasional, IT, kejuruteraan, teknikal
+- Keselamatan: OSH, keselamatan pekerjaan, fire drill, first aid
+- Bukan Teknikal: pengurusan, kewangan, komunikasi, soft skills, pembangunan diri
+
+Peraturan jam:
+- Jika sijil nyatakan jam/CPD hours, gunakan nilai tersebut
+- Jika tidak ada jam tapi ada tarikh, JANGAN kira sendiri — kembalikan null
+- Kembalikan JSON sahaja, tanpa teks lain.`;
+
+  try {
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 1000,
+        messages: [{
+          role: 'user',
+          content: [{
+            type: 'image',
+            source: { type: 'base64', media_type: mimeType, data: base64 }
+          }, {
+            type: 'text', text: prompt
+          }]
+        }]
+      })
+    });
+
+    const data = await response.json();
+    let text = data.content[0].text.replace(/```json|```/g, '').trim();
+    const extracted = JSON.parse(text);
+    populatePreview(extracted);
+  } catch(e) {
+    console.error(e);
+    populatePreview({ nama: '', tajuk: '', kategori: 'Teknikal', tarikh_mula: null, tarikh_tamat: null, jam: null });
+    showAlert(document.getElementById('simpanAlert'), 'warn', '⚠️ AI tidak dapat menganalisis. Sila isi manual.');
+  }
+  hideLoading();
+}
+
+function populatePreview(d) {
+  document.getElementById('previewNama').textContent = d.nama || '-';
+  document.getElementById('previewKategori').textContent = d.kategori || '-';
+  document.getElementById('previewTajuk').textContent = d.tajuk || '-';
+  document.getElementById('previewTarikhMula').textContent = d.tarikh_mula || '-';
+  document.getElementById('previewTarikhTamat').textContent = d.tarikh_tamat || '-';
+
+  // Populate edit fields
+  document.getElementById('editNama').value = d.nama || (currentUser ? currentUser.nama : '');
+  document.getElementById('editTajuk').value = d.tajuk || '';
+  document.getElementById('editTarikhMula').value = d.tarikh_mula || '';
+  document.getElementById('editTarikhTamat').value = d.tarikh_tamat || '';
+
+  const sel = document.getElementById('editKategori');
+  if (d.kategori) {
+    for (let opt of sel.options) {
+      if (opt.value === d.kategori) { sel.value = d.kategori; break; }
+    }
+  }
+
+  // Calculate jam
+  let jam = d.jam;
+  if (!jam && d.tarikh_mula && d.tarikh_tamat) {
+    jam = kiraBilanganHari(d.tarikh_mula, d.tarikh_tamat) * 8;
+  } else if (!jam && d.tarikh_mula) {
+    jam = 8;
+  }
+  document.getElementById('editJam').value = jam || 8;
+  document.getElementById('previewJam').textContent = jam || 8;
+
+  document.getElementById('previewCard').classList.add('show');
+}
+
+function kiraBilanganHari(mula, tamat) {
+  const d1 = new Date(mula), d2 = new Date(tamat);
+  return Math.round((d2 - d1) / (1000*60*60*24)) + 1;
+}
+
+function kiraSemula() {
+  const mula = document.getElementById('editTarikhMula').value;
+  const tamat = document.getElementById('editTarikhTamat').value;
+  if (mula && tamat) {
+    const hari = kiraBilanganHari(mula, tamat);
+    document.getElementById('editJam').value = hari * 8;
+    document.getElementById('previewJam').textContent = hari * 8;
+  }
+}
+
+// ═══════════════════════════════════════════════
+// SIMPAN KURSUS
+// ═══════════════════════════════════════════════
+async function simpanKursus() {
+  if (!currentUser) return;
+  const alertEl = document.getElementById('simpanAlert');
+
+  const nama = document.getElementById('editNama').value.trim();
+  const tajuk = document.getElementById('editTajuk').value.trim();
+  const kategori = document.getElementById('editKategori').value;
+  const tarikhMula = document.getElementById('editTarikhMula').value;
+  const tarikhTamat = document.getElementById('editTarikhTamat').value;
+  const jam = parseInt(document.getElementById('editJam').value) || 0;
+
+  if (!tajuk) return showAlert(alertEl, 'error', '⚠️ Sila isi tajuk kursus.');
+  if (!tarikhMula) return showAlert(alertEl, 'error', '⚠️ Sila isi tarikh mula.');
+  if (!jam) return showAlert(alertEl, 'error', '⚠️ Bilangan jam tidak sah.');
+
+  showLoading('Menyimpan rekod dan memuat naik sijil...');
+
+  try {
+    const res = await gasCall('simpan', {
+      namaSendiri: currentUser.nama,
+      namaSijil: nama,
+      tajuk, kategori,
+      tarikhMula, tarikhTamat: tarikhTamat || tarikhMula,
+      jam,
+      fileBase64: uploadedBase64,
+      fileName: uploadedFile ? uploadedFile.name : 'sijil.jpg',
+      mimeType: uploadedFile ? uploadedFile.type : 'image/jpeg'
+    });
+
+    if (res.ok) {
+      showAlert(alertEl, 'success', '✅ Rekod berjaya disimpan!');
+      resetUpload();
+      loadRekod();
+    } else {
+      showAlert(alertEl, 'error', '❌ ' + (res.msg || 'Ralat menyimpan.'));
+    }
+  } catch(e) {
+    showAlert(alertEl, 'error', '❌ Gagal berhubung dengan pelayan.');
+  }
+  hideLoading();
+}
+
+function resetUpload() {
+  uploadedFile = null;
+  uploadedBase64 = null;
+  document.getElementById('fileInput').value = '';
+  document.getElementById('imgPreviewWrap').innerHTML = '';
+  document.getElementById('previewCard').classList.remove('show');
+  document.getElementById('simpanAlert').classList.remove('show');
+}
+
+// ═══════════════════════════════════════════════
+// LOAD REKOD STAF
+// ═══════════════════════════════════════════════
+async function loadRekod() {
+  if (!currentUser) return;
+  showLoading('Memuatkan rekod...');
+
+  try {
+    const res = await gasCall('getRekod', { nama: currentUser.nama });
+    if (res.ok) {
+      renderRekod(res.data || []);
+    }
+  } catch(e) { console.error(e); }
+  hideLoading();
+}
+
+function renderRekod(data) {
+  const container = document.getElementById('rekodContainer');
+  const totalJam = data.reduce((s, r) => s + (parseInt(r.jam)||0), 0);
+  document.getElementById('totalJamDisplay').textContent = totalJam;
+
+  if (!data.length) {
+    container.innerHTML = `<div class="empty-state">
+      <div class="empty-icon">📭</div>
+      <div class="empty-text">Tiada rekod lagi. Muat naik sijil pertama anda!</div>
+    </div>`;
+    return;
+  }
+
+  const rows = data.map(r => `
+    <tr>
+      <td>${r.tarikhMula || '-'}</td>
+      <td style="max-width:200px;">${r.tajuk}</td>
+      <td><span class="cat-badge cat-${r.kategori==='Teknikal'?'teknikal':r.kategori==='Keselamatan'?'keselamatan':'bukan'}">${r.kategori}</span></td>
+      <td style="font-family:'JetBrains Mono';font-weight:700;color:var(--teal);">${r.jam}</td>
+      <td>${r.driveUrl ? `<a href="${r.driveUrl}" target="_blank" style="color:var(--teal);font-size:12px;">📎 Sijil</a>` : '-'}</td>
+    </tr>
+  `).join('');
+
+  container.innerHTML = `
+    <table class="rekod-table">
+      <thead>
+        <tr>
+          <th>TARIKH</th><th>TAJUK KURSUS</th><th>KATEGORI</th><th>JAM</th><th>SIJIL</th>
+        </tr>
+      </thead>
+      <tbody>${rows}</tbody>
+    </table>`;
+}
+
+// ═══════════════════════════════════════════════
+// ADMIN DATA
+// ═══════════════════════════════════════════════
+async function loadAdminData() {
+  showLoading('Memuatkan data admin...');
+  try {
+    const res = await gasCall('getAdmin', {});
+    if (res.ok) {
+      adminData = res.data || [];
+      updateAdminStats();
+      renderAdminTable();
+    }
+  } catch(e) { console.error(e); }
+  hideLoading();
+}
+
+function updateAdminStats() {
+  const staf = adminData;
+  const cukup = staf.filter(s => s.total >= 40).length;
+  const kurang = staf.filter(s => s.total < 40).length;
+  const totalKursus = staf.reduce((s, x) => s + (x.bilKursus||0), 0);
+
+  document.getElementById('sTotalStaf').textContent = staf.length;
+  document.getElementById('sCukup').textContent = cukup;
+  document.getElementById('sKurang').textContent = kurang;
+  document.getElementById('sTotalKursus').textContent = totalKursus;
+}
+
+function filterAdmin(val, btn) {
+  adminFilter = val;
+  document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+  btn.classList.add('active');
+  renderAdminTable();
+}
+
+function sortAdmin(col) {
+  if (adminSort.col === col) adminSort.dir *= -1;
+  else { adminSort.col = col; adminSort.dir = 1; }
+  renderAdminTable();
+}
+
+function renderAdminTable() {
+  const carian = document.getElementById('adminCarian').value.toLowerCase();
+  let data = [...adminData];
+
+  // Filter
+  if (adminFilter === 'kurang40') data = data.filter(s => s.total < 40);
+  else if (adminFilter !== 'semua') {
+    data = data.filter(s => {
+      if (adminFilter === 'Teknikal') return s.teknikal > 0;
+      if (adminFilter === 'Bukan Teknikal') return s.bukanTeknikal > 0;
+      if (adminFilter === 'Keselamatan') return s.keselamatan > 0;
+    });
+  }
+
+  // Carian
+  if (carian) data = data.filter(s => s.nama.toLowerCase().includes(carian));
+
+  // Sort
+  data.sort((a, b) => {
+    let va = a[adminSort.col], vb = b[adminSort.col];
+    if (typeof va === 'string') return va.localeCompare(vb) * adminSort.dir;
+    return (va - vb) * adminSort.dir;
+  });
+
+  const tbody = document.getElementById('adminTableBody');
+  if (!data.length) {
+    tbody.innerHTML = '<tr><td colspan="7" class="empty-state"><div>Tiada data.</div></td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = data.map(s => {
+    const pct = Math.min((s.total / 40) * 100, 100);
+    const cls = s.total >= 40 ? '' : s.total >= 20 ? 'warning' : 'danger';
+    const badge = s.total >= 40
+      ? `<span class="cukup-badge">✅ Cukup</span>`
+      : `<span class="kurang-badge">⚠️ ${40 - s.total} jam lagi</span>`;
+
+    return `<tr>
+      <td style="font-weight:600; max-width:220px;">${s.nama}</td>
+      <td style="font-family:'JetBrains Mono'; color:var(--teal);">${s.teknikal || 0}</td>
+      <td style="font-family:'JetBrains Mono'; color:var(--amber);">${s.bukanTeknikal || 0}</td>
+      <td style="font-family:'JetBrains Mono'; color:#ff6b6b;">${s.keselamatan || 0}</td>
+      <td>
+        <div style="font-family:'JetBrains Mono'; font-weight:800; font-size:16px;">${s.total}</div>
+        <div class="jam-meter"><div class="meter-bar"><div class="meter-fill ${cls}" style="width:${pct}%"></div></div></div>
+      </td>
+      <td>${badge}</td>
+      <td style="font-family:'JetBrains Mono'; text-align:center;">${s.bilKursus || 0}</td>
+    </tr>`;
+  }).join('');
+}
+
+// ═══════════════════════════════════════════════
+// TAMBAH NAMA STAF (ADMIN)
+// ═══════════════════════════════════════════════
+async function tambahNamaStaf() {
+  const nama = document.getElementById('namaBaru').value.trim().toUpperCase();
+  const alertEl = document.getElementById('tambahAlert');
+  if (!nama) return showAlert(alertEl, 'error', '⚠️ Sila masukkan nama.');
+
+  showLoading('Menambah nama...');
+  try {
+    const res = await gasCall('tambahNama', { nama });
+    if (res.ok) {
+      showAlert(alertEl, 'success', `✅ "${nama}" berjaya ditambah.`);
+      document.getElementById('namaBaru').value = '';
+      // Tambah ke dropdown
+      SENARAI_NAMA.push(nama);
+      SENARAI_NAMA.sort();
+      ['daftarNama','loginNama'].forEach(id => {
+        const sel = document.getElementById(id);
+        const opt = document.createElement('option');
+        opt.value = nama; opt.textContent = nama;
+        sel.appendChild(opt);
+      });
+    } else {
+      showAlert(alertEl, 'error', '❌ ' + (res.msg || 'Ralat.'));
+    }
+  } catch(e) {
+    showAlert(alertEl, 'error', '❌ Gagal berhubung dengan pelayan.');
+  }
+  hideLoading();
+}
+
+// ═══════════════════════════════════════════════
+// HELPERS
+// ═══════════════════════════════════════════════
+function showAlert(el, type, msg) {
+  el.className = `alert alert-${type} show`;
+  el.textContent = msg;
+  if (type === 'success') setTimeout(() => el.classList.remove('show'), 4000);
+}
+
+function showLoading(msg = 'Memproses...') {
+  document.getElementById('loadingText').textContent = msg;
+  document.getElementById('loadingOverlay').classList.add('show');
+}
+function hideLoading() {
+  document.getElementById('loadingOverlay').classList.remove('show');
+}
+</script>
+</body>
+</html>
