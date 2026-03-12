@@ -922,10 +922,24 @@ function checkAdminPin() {
 // Guna GET + query params untuk elak CORS issue
 // ═══════════════════════════════════════════════
 async function gasCall(action, data = {}) {
-  const encoded = encodeURIComponent(JSON.stringify(data));
-  const url = `${GAS_URL}?action=${action}&data=${encoded}`;
-  const res = await fetch(url, { redirect: 'follow' });
-  return await res.json();
+  const hasFile = !!data.fileBase64;
+
+  if (!hasFile) {
+    // GET biasa — untuk daftar/login/getRekod/getAdmin/tambahNama
+    const encoded = encodeURIComponent(JSON.stringify(data));
+    const url = `${GAS_URL}?action=${action}&data=${encoded}`;
+    const res = await fetch(url, { redirect: 'follow' });
+    return await res.json();
+  } else {
+    // Ada fail base64 — hantar ke Vercel proxy dulu
+    // Vercel /api/simpan akan forward ke GAS dan Drive API
+    const res = await fetch('/api/simpan', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action, data, gasUrl: GAS_URL })
+    });
+    return await res.json();
+  }
 }
 
 // ═══════════════════════════════════════════════
@@ -950,7 +964,7 @@ async function daftarStaf() {
       showAlert(alertEl, 'error', '❌ ' + (res.msg || 'Ralat semasa mendaftar.'));
     }
   } catch(e) {
-    showAlert(alertEl, 'error', '❌ Gagal berhubung dengan pelayan.');
+    showAlert(alertEl, 'error', '❌ Gagal: ' + e.message);
   }
   hideLoading();
 }
@@ -983,7 +997,7 @@ async function loginStaf() {
       showAlert(alertEl, 'error', '❌ Nama atau kata laluan salah.');
     }
   } catch(e) {
-    showAlert(alertEl, 'error', '❌ Gagal berhubung dengan pelayan.');
+    showAlert(alertEl, 'error', '❌ Gagal: ' + e.message);
   }
   hideLoading();
 }
@@ -1214,7 +1228,7 @@ async function simpanKursus() {
       showAlert(alertEl, 'error', '❌ ' + (res.msg || 'Ralat menyimpan.'));
     }
   } catch(e) {
-    showAlert(alertEl, 'error', '❌ Gagal berhubung dengan pelayan.');
+    showAlert(alertEl, 'error', '❌ Gagal: ' + e.message);
   }
   hideLoading();
 }
@@ -1398,7 +1412,7 @@ async function tambahNamaStaf() {
       showAlert(alertEl, 'error', '❌ ' + (res.msg || 'Ralat.'));
     }
   } catch(e) {
-    showAlert(alertEl, 'error', '❌ Gagal berhubung dengan pelayan.');
+    showAlert(alertEl, 'error', '❌ Gagal: ' + e.message);
   }
   hideLoading();
 }
