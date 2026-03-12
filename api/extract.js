@@ -1,9 +1,7 @@
 // api/extract.js — Vercel Serverless Function
-// API key Claude disimpan dalam Vercel Environment Variable
-// Staf tidak boleh nampak key ini
+// Menyokong: image/jpeg, image/png, image/gif, image/webp, application/pdf
 
 export default async function handler(req, res) {
-  // Allow CORS
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
@@ -18,26 +16,7 @@ export default async function handler(req, res) {
       return res.status(400).json({ ok: false, msg: 'Data tidak lengkap.' });
     }
 
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': process.env.CLAUDE_API_KEY,
-        'anthropic-version': '2023-06-01'
-      },
-      body: JSON.stringify({
-        model: 'claude-haiku-4-5-20251001',
-        max_tokens: 1000,
-        messages: [{
-          role: 'user',
-          content: [
-            {
-              type: 'image',
-              source: { type: 'base64', media_type: mimeType, data: base64 }
-            },
-            {
-              type: 'text',
-              text: `Analisis sijil/dokumen kursus ini dan ekstrak maklumat berikut dalam format JSON:
+    const prompt = `Analisis sijil/dokumen kursus ini dan ekstrak maklumat berikut dalam format JSON:
 {
   "nama": "nama penerima sijil",
   "tajuk": "tajuk penuh kursus/seminar/webinar/latihan",
@@ -54,9 +33,41 @@ Peraturan kategori:
 
 Peraturan jam:
 - Jika sijil nyatakan jam/CPD hours, gunakan nilai tersebut
-- Jika tidak ada jam tapi ada tarikh, kembalikan null (sistem akan kira sendiri)
-- Kembalikan JSON sahaja, tanpa teks lain.`
-            }
+- Jika tidak ada jam tapi ada tarikh, kembalikan null
+- Kembalikan JSON sahaja, tanpa teks lain.`;
+
+    // Bina content block ikut jenis fail
+    let fileBlock;
+    if (mimeType === 'application/pdf') {
+      fileBlock = {
+        type: 'document',
+        source: { type: 'base64', media_type: 'application/pdf', data: base64 }
+      };
+    } else {
+      const validImages = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+      const safeMime = validImages.includes(mimeType) ? mimeType : 'image/jpeg';
+      fileBlock = {
+        type: 'image',
+        source: { type: 'base64', media_type: safeMime, data: base64 }
+      };
+    }
+
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': process.env.CLAUDE_API_KEY,
+        'anthropic-version': '2023-06-01',
+        'anthropic-beta': 'pdfs-2024-09-25'
+      },
+      body: JSON.stringify({
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 1000,
+        messages: [{
+          role: 'user',
+          content: [
+            fileBlock,
+            { type: 'text', text: prompt }
           ]
         }]
       })
